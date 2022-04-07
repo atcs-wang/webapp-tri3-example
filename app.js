@@ -1,7 +1,11 @@
 //set up the server
 const express = require( "express" );
+const logger = require( "morgan" );
 const app = express();
 const port = 8080;
+
+//defining middleware that logs all incoming requests.
+app.use(logger("dev"));
 
 // define a route for the default home page
 app.get( "/", ( req, res ) => {
