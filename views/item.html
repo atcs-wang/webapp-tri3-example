@@ -21,6 +21,9 @@
     <div class="container">
         <div class="section flow-text" id="stuffDetail">
             <h1>Stuff details:</h1>
+            <a class="btn-small waves-effect waves-light" href="/stuff">
+                <i class="material-icons left">arrow_back</i>Return to Inventory
+            </a>
             <table>
                 <tr>
                     <th>Item:</th>
@@ -60,25 +63,26 @@
                 <form>
                     <div class="row">
                         <div class="input-field col s6">
-                            <label for="name">Item Name:</label>
-                            <input type="text" name="name" class="validate" data-length="32" required>
+                            <label for="nameInput">Item Name:</label>
+                            <input type="text" name="name" id="nameInput" class="validate" data-length="32" required>
                         </div>
                         <div class="input-field col s6">
-                            <label for="quantity">Item Quantity:</label>
-                            <input type="number" name="quantity" value=1 required>
+                            <label for="quantityInput">Item Quantity:</label>
+                            <input type="number" name="quantity" id="quantityInput" value=1 required>
                         </div>
                     </div>
                     <div class="row">
                         <div class="input-field col s12">
-                            <label for="description">Item Description:</label>
-                            <input type="text" name="description" data-length="100">
+                            <label for="descriptionInput">Item Description:</label>
+                            <input type="text" name="description" id="descriptionInput" data-length="100">
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn waves-effect waves-light " type="submit"><i
-                                class="material-icons right">send</i>Submit</button>
-
-                        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Never Mind</a>
+                        <button class="btn waves-effect waves-light " type="submit">
+                            <i class="material-icons right">send</i>
+                            Submit
+                        </button>
+                        <button class="modal-close waves-effect waves-green btn-flat">Never Mind</button>
                     </div>
                 </form>
             </div>
