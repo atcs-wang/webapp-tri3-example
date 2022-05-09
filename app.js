@@ -34,7 +34,14 @@ app.get( "/stuff", ( req, res ) => {
         if (error)
             res.status(500).send(error); //Internal Server Error
         else 
-            res.send(results);
+            res.render("stuff", { inventory : results});
+        // inventory's shape:
+        // [
+        //  {id: __, item: ___, quantity: ____},
+        //  {id: __, item: ___, quantity: ____},
+        //  {id: __, item: ___, quantity: ____},
+        //  ...
+        // ]
     })
 } );
 
@@ -61,6 +68,24 @@ app.get( "/stuff/item/:id", ( req, res ) => {
         }
     })
 } );
+
+const delete_stuff_sql = `
+    DELETE
+    FROM 
+        stuff
+    WHERE 
+        id = ?
+`
+
+app.get("/stuff/item/:id/delete", ( req, res) => {
+    db.execute(delete_stuff_sql, [req.params.id], ( error, results) => {
+        if(error)
+            res.status(500).send(error); //Internal Server Error
+        else {
+            res.redirect("/stuff");
+        }
+    })
+})
 
 
 // start the server
