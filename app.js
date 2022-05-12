@@ -10,6 +10,10 @@ app.set("view engine", "ejs");
 
 const db = require('./db/db_connection');
 
+
+// configure express to parse URL-encoded POST request bodies (traditional forms)
+app.use( express.urlencoded({extended : false}));
+
 //defining middleware that logs all incoming requests.
 app.use(logger("dev"));
 
@@ -63,7 +67,7 @@ app.get( "/stuff/item/:id", ( req, res ) => {
             res.status(404).send(`No item found with id = ${req.params.id}`); // NOT FOUND
         else {
             let data = results[0]; // results is still an array
-            //{ item: ___ , quantity:___, description: ___}
+            //{id: ___,  item: ___ , quantity:___, description: ___}
             res.render('item', data)
         }
     })
@@ -82,7 +86,54 @@ app.get("/stuff/item/:id/delete", ( req, res) => {
         if(error)
             res.status(500).send(error); //Internal Server Error
         else {
+            // res.send("<h1>Item deleted!</h1> <a href='/stuff'>inventory</a>")
             res.redirect("/stuff");
+        }
+    })
+})
+const create_item_sql = `
+INSERT INTO stuff
+    (item, quantity)
+VALUES
+    (?, ?)
+`
+app.post("/stuff", (req, res) => {
+    // to get the form input values:
+    //req.body.name 
+    //req.body.quantity
+    db.execute(create_item_sql, [req.body.name, req.body.quantity], (error , results) => {
+        if(error)
+            res.status(500).send(error); //Internal Server Error
+        else {
+            //res.redirect(`/stuff`);
+            res.redirect(`/stuff/item/${results.insertId}`);
+        }
+    })
+});
+
+const update_item_sql = `
+    UPDATE
+        stuff
+    SET 
+        item = ?,
+        quantity = ?,
+        description = ?
+    WHERE 
+        id = ?
+`
+app.post("/stuff/item/:id", (req, res) => {
+    //req.params.id
+    // to get the form input values:
+    //req.body.name 
+    //req.body.quantity
+    //req.body.description
+    db.execute(update_item_sql, [req.body.name, req.body.quantity, 
+                                req.body.description, req.params.id], 
+                                (error, results) => {
+        if(error)
+            res.status(500).send(error); //Internal Server Error
+        else {
+            res.redirect(`/stuff/item/${req.params.id}`);
         }
     })
 })
