@@ -8,7 +8,7 @@ const port = 8080;
 app.set("views", __dirname + "/views");
 app.set("view engine", "ejs");
 
-const db = require('./db/db_connection');
+const db = require('./db/db_pool');
 
 
 // configure express to parse URL-encoded POST request bodies (traditional forms)
