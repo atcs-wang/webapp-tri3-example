@@ -13,6 +13,20 @@ app.set("view engine", "ejs");
 
 const db = require('./db/db_pool');
 
+//Configure Auth0
+const { auth } = require('express-openid-connect');
+
+const config = {
+  authRequired: false,
+  auth0Logout: true,
+  secret: process.env.AUTH0_SECRET,
+  baseURL: process.env.AUTH0_BASE_URL,
+  clientID: process.env.AUTH0_CLIENT_ID,
+  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL
+};
+
+// auth router attaches /login, /logout, and /callback routes to the baseURL
+app.use(auth(config));
 
 // configure express to parse URL-encoded POST request bodies (traditional forms)
 app.use( express.urlencoded({extended : false}));
@@ -22,6 +36,17 @@ app.use(logger("dev"));
 
 // define middleware that serves static resources in the public directory
 app.use(express.static(__dirname + '/public'));
+
+// req.isAuthenticated is provided from the auth router
+app.get('/testLogin', (req, res) => {
+    res.send(req.oidc.isAuthenticated() ? 'Logged in' : 'Logged out');
+});
+
+const { requiresAuth } = require('express-openid-connect');
+
+app.get('/profile', requiresAuth(), (req, res) => {
+  res.send(JSON.stringify(req.oidc.user));
+});
 
 // define a route for the default home page
 app.get( "/", ( req, res ) => {
@@ -33,15 +58,17 @@ const read_stuff_all_sql = `
         id, item, quantity
     FROM
         stuff
+    WHERE
+        email = ?
 `
 
 // define a route for the stuff inventory page
-app.get( "/stuff", ( req, res ) => {
-    db.execute(read_stuff_all_sql, (error, results) => {
+app.get( "/stuff", requiresAuth(), ( req, res ) => {
+    db.execute(read_stuff_all_sql, [req.oidc.user.email], (error, results) => {
         if (error)
             res.status(500).send(error); //Internal Server Error
         else 
-            res.render("stuff", { inventory : results});
+            res.render("stuff", { inventory : results, username : req.oidc.user.name});
         // inventory's shape:
         // [
         //  {id: __, item: ___, quantity: ____},
@@ -59,11 +86,12 @@ const read_stuff_item_sql = `
         stuff
     WHERE
         id = ?
+        AND email = ?
 `
 
 // define a route for the item detail page
-app.get( "/stuff/item/:id", ( req, res ) => {
-    db.execute(read_stuff_item_sql, [req.params.id], (error, results) =>{
+app.get( "/stuff/item/:id", requiresAuth(), ( req, res ) => {
+    db.execute(read_stuff_item_sql, [req.params.id, req.oidc.user.email], (error, results) =>{
         if(error)
             res.status(500).send(error); //Internal Server Error
         else if (results.length == 0)
@@ -82,10 +110,11 @@ const delete_stuff_sql = `
         stuff
     WHERE 
         id = ?
+        AND email = ?
 `
 
-app.get("/stuff/item/:id/delete", ( req, res) => {
-    db.execute(delete_stuff_sql, [req.params.id], ( error, results) => {
+app.get("/stuff/item/:id/delete", requiresAuth(), ( req, res) => {
+    db.execute(delete_stuff_sql, [req.params.id, req.oidc.user.email], ( error, results) => {
         if(error)
             res.status(500).send(error); //Internal Server Error
         else {
@@ -96,15 +125,15 @@ app.get("/stuff/item/:id/delete", ( req, res) => {
 })
 const create_item_sql = `
 INSERT INTO stuff
-    (item, quantity)
+    (item, quantity, email)
 VALUES
-    (?, ?)
+    (?, ?, ?)
 `
-app.post("/stuff", (req, res) => {
+app.post("/stuff", requiresAuth(), (req, res) => {
     // to get the form input values:
     //req.body.name 
     //req.body.quantity
-    db.execute(create_item_sql, [req.body.name, req.body.quantity], (error , results) => {
+    db.execute(create_item_sql, [req.body.name, req.body.quantity, req.oidc.user.email ], (error , results) => {
         if(error)
             res.status(500).send(error); //Internal Server Error
         else {
@@ -123,15 +152,16 @@ const update_item_sql = `
         description = ?
     WHERE 
         id = ?
+        AND email = ?
 `
-app.post("/stuff/item/:id", (req, res) => {
+app.post("/stuff/item/:id", requiresAuth(), (req, res) => {
     //req.params.id
     // to get the form input values:
     //req.body.name 
     //req.body.quantity
     //req.body.description
     db.execute(update_item_sql, [req.body.name, req.body.quantity, 
-                                req.body.description, req.params.id], 
+                                req.body.description, req.params.id, req.oidc.user.email], 
                                 (error, results) => {
         if(error)
             res.status(500).send(error); //Internal Server Error
